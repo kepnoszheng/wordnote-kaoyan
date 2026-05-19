@@ -669,6 +669,7 @@ body {
 <div id="app">
 <div id="app">
 <div id="app">
+<div id="app">
 
 <nav class="navbar">
   <div class="nav-brand">词记</div>
@@ -773,6 +774,7 @@ body {
   <div class="tab-item" onclick="App.showPage('quiz')" data-page="quiz"><div class="tab-icon">&#9997;</div><div class="tab-label">测试</div></div>
   <div class="tab-item" onclick="App.showPage('stats')" data-page="stats"><div class="tab-icon">&#128202;</div><div class="tab-label">统计</div></div>
   <div class="tab-item" onclick="App.showPage('settings')" data-page="settings"><div class="tab-icon">&#9881;</div><div class="tab-label">设置</div></div>
+</div>
 </div>
 </div>
 </div>
@@ -11256,46 +11258,8 @@ const App = {
     this.bindKeyboard();
     this.checkAndRecordStreak();
 
-    // 检测语音支持
-    this.speechReady = false;
-    this.useFallbackAudio = false;
-    this.detectSpeechSupport();
-
     console.log('📖 词记 WordNote v0.1 - 免费无限制背单词');
     console.log(`📚 词库: ${VOCABULARY.length} 个词汇`);
-  },
-
-  /**
-   * 检测语音合成支持情况
-   * 部分 Android 浏览器（如华为自带浏览器）虽然支持但调用会失败，
-   * 统一先试 Web Speech API，失败后自动切到备用发音
-   */
-  detectSpeechSupport() {
-    this.useFallbackAudio = false;
-    this.speechRetried = {};
-
-    if (window.speechSynthesis) {
-      speechSynthesis.getVoices();
-      if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
-        speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
-      }
-    }
-
-    // 首次触摸时唤醒（iOS 需要）
-    const wake = () => {
-      if (window.speechSynthesis) {
-        try {
-          speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance('a');
-          u.volume = 0.01;
-          speechSynthesis.speak(u);
-        } catch(e) {}
-      }
-      document.removeEventListener('touchstart', wake, true);
-      document.removeEventListener('click', wake, true);
-    };
-    document.addEventListener('touchstart', wake, { once: true, capture: true });
-    document.addEventListener('click', wake, { once: true, capture: true });
   },
 
   /**
@@ -11481,18 +11445,19 @@ const App = {
       nextInfo.style.display = 'none';
     }
 
-    // 自动发音
+    // 自动发音（仅用有道TTS，Web Speech API 兼容性太差）
     const settings = Store.getSettings();
     if (settings.autoPlay !== false) {
-      // 手机上需要先触摸页面才能发声，prepareSpeech 已处理唤醒
-      // 这里用 setTimeout 延迟播放，给手机浏览器一点准备时间
-      setTimeout(() => this.speak(), 300);
+      setTimeout(() => this.speak(), 400);
     }
   },
 
   /**
    * 朗读当前单词
-   * 流程：试 Web Speech API → 失败？→ 用备用在线TTS（有道词典，国内可访问）
+   * 
+   * 策略：直接使用<audio>播放在线TTS语音（有道词典）。
+   * 按钮点击（onclick）是用户手势，音频可以正常播放。
+   * 放弃 Web Speech API 因为大量国产浏览器兼容性差。
    */
   speak() {
     const word = this.currentWord;
@@ -11502,68 +11467,34 @@ const App = {
     if (btn) btn.classList.add('playing');
     const done = () => { if (btn) btn.classList.remove('playing'); };
 
-    // 尝试 web speech api
-    if (window.speechSynthesis && !this.useFallbackAudio) {
-      try {
-        speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(word.word);
-        u.lang = 'en-US';
-        u.rate = 0.9;
-        u.volume = 1.0;
-
-        const voices = speechSynthesis.getVoices();
-        if (voices.length > 0) {
-          const ev = voices.find(v => v.lang.startsWith('en'));
-          if (ev) u.voice = ev;
-        }
-
-        u.onend = done;
-        u.onerror = () => {
-          // Web Speech API 失败 → 永久切到备用发音
-          this.useFallbackAudio = true;
-          this.speakFallback(word.word, done);
-        };
-
-        speechSynthesis.speak(u);
-        return;
-      } catch(e) {
-        this.useFallbackAudio = true;
-      }
-    }
-
-    // 备用发音（Web Speech API 不可用或已标记降级）
-    this.speakFallback(word.word, done);
-  },
-
-  /**
-   * 备用发音：使用在线 TTS（有道词典）
-   * 国内可访问，比 Google TTS 更稳定
-   * 优先用有道英式发音，失败时试美式发音
-   */
-  speakFallback(text, done) {
+    // 移除上次的 audio 元素
     const old = document.getElementById('tts-audio');
     if (old) old.remove();
 
-    // 有道词典发音接口（type=0 英式，type=1 美式）
+    // 有道词典在线发音（国内可用）
+    // type=0 英式, type=1 美式
+    const text = encodeURIComponent(word.word);
     const audio = document.createElement('audio');
     audio.id = 'tts-audio';
     audio.style.display = 'none';
     audio.onended = done;
     audio.onerror = () => {
-      // 有道也失败的话，试试美式发音
+      // 英式不行换美式
       if (!audio.dataset.retried) {
         audio.dataset.retried = '1';
-        audio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=1';
+        audio.src = 'https://dict.youdao.com/dictvoice?audio=' + text + '&type=1';
         audio.play().catch(done);
       } else {
         done();
       }
     };
-    audio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=0';
+    audio.src = 'https://dict.youdao.com/dictvoice?audio=' + text + '&type=0';
     document.body.appendChild(audio);
+
+    // 在用户手势中直接播放
     audio.play().catch(() => {
-      // 第一遍失败，换美式发音再试
-      audio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=1';
+      // 第一次失败换美式
+      audio.src = 'https://dict.youdao.com/dictvoice?audio=' + text + '&type=1';
       audio.play().catch(done);
     });
   },
