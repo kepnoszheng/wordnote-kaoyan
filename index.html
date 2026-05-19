@@ -667,6 +667,7 @@ body {
 <div id="app">
 <div id="app">
 <div id="app">
+<div id="app">
 
 <nav class="navbar">
   <div class="nav-brand">词记</div>
@@ -771,6 +772,7 @@ body {
   <div class="tab-item" onclick="App.showPage('quiz')" data-page="quiz"><div class="tab-icon">&#9997;</div><div class="tab-label">测试</div></div>
   <div class="tab-item" onclick="App.showPage('stats')" data-page="stats"><div class="tab-icon">&#128202;</div><div class="tab-label">统计</div></div>
   <div class="tab-item" onclick="App.showPage('settings')" data-page="settings"><div class="tab-icon">&#9881;</div><div class="tab-label">设置</div></div>
+</div>
 </div>
 </div>
 </div>
@@ -11252,41 +11254,48 @@ const App = {
     this.bindKeyboard();
     this.checkAndRecordStreak();
 
-    // 手机端语音预处理
-    this.initSpeech();
+    // 检测语音支持
+    this.speechReady = false;
+    this.useFallbackAudio = false;
+    this.detectSpeechSupport();
 
     console.log('📖 词记 WordNote v0.1 - 免费无限制背单词');
     console.log(`📚 词库: ${VOCABULARY.length} 个词汇`);
   },
 
   /**
-   * 初始化语音合成
-   * 手机浏览器（尤其是 iOS Safari）的 Web Speech API 需要用户交互触发、
-   * 且需要在页面加载后先加载语音列表。
-   * 这里在 DOMContentLoaded 和首次触摸时各尝试一次。
+   * 检测语音合成支持情况
+   * 部分 Android 浏览器（如华为自带浏览器）不支持 Web Speech API，
+   * 需要改用在线 TTS 发音
    */
-  initSpeech() {
-    if (!window.speechSynthesis) return;
-    // 1) 立即触发语音包加载
-    window.speechSynthesis.getVoices();
-    // 2) 监听语音包就绪
-    if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
-      speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+  detectSpeechSupport() {
+    // 检测 Web Speech API
+    if (window.speechSynthesis && typeof speechSynthesis.speak === 'function') {
+      // 尝试初始化：部分浏览器需要先 touch 才能用
+      speechSynthesis.getVoices();
+      if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
+        speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+      }
+      this.speechReady = true;
+
+      // 首次触摸时唤醒
+      const wake = () => {
+        try {
+          speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance('a');
+          u.volume = 0.01;
+          speechSynthesis.speak(u);
+        } catch(e) {}
+        document.removeEventListener('touchstart', wake, true);
+        document.removeEventListener('click', wake, true);
+      };
+      document.addEventListener('touchstart', wake, { once: true, capture: true });
+      document.addEventListener('click', wake, { once: true, capture: true });
+    } else {
+      // Web Speech API 不可用，使用备用在线 TTS
+      this.useFallbackAudio = true;
+      console.log('⚠️ 当前浏览器不支持内置发音，使用备用 TTS');
     }
-    // 3) 首次触摸/点击时：播一段极短静音来"唤醒"引擎
-    const wake = () => {
-      try {
-        speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance('a');
-        u.volume = 0.01;
-        u.rate = 1;
-        speechSynthesis.speak(u);
-      } catch(e) {/* 静默 */}
-      document.removeEventListener('touchstart', wake, true);
-      document.removeEventListener('click', wake, true);
-    };
-    document.addEventListener('touchstart', wake, { once: true, capture: true });
-    document.addEventListener('click', wake, { once: true, capture: true });
   },
 
   /**
@@ -11482,46 +11491,69 @@ const App = {
   },
 
   /**
-   * 朗读当前单词（Web Speech API）
-   * 手机端注意：需要先在页面上触摸一次唤醒引擎（initSpeech 已处理）
+   * 朗读当前单词
+   * 优先用 Web Speech API，不支持时自动切换在线 TTS（Google TTS）
    */
   speak() {
     const word = this.currentWord;
-    if (!word || !window.speechSynthesis) return;
+    if (!word) return;
+
+    // 按钮动画
+    const btn = document.getElementById('btn-speak');
+    if (btn) btn.classList.add('playing');
+    const done = () => { if (btn) btn.classList.remove('playing'); };
+
+    if (this.useFallbackAudio || !window.speechSynthesis) {
+      return this.speakFallback(word.word, done);
+    }
 
     try {
       speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(word.word);
       utterance.lang = 'en-US';
       utterance.rate = 0.9;
-      utterance.pitch = 1.0;
       utterance.volume = 1.0;
 
-      // 获取英语语音
+      // 可选：设置英语语音
       const voices = speechSynthesis.getVoices();
       if (voices.length > 0) {
-        const enVoice = voices.find(v => v.lang.startsWith('en'));
-        if (enVoice) utterance.voice = enVoice;
+        const ev = voices.find(v => v.lang.startsWith('en'));
+        if (ev) utterance.voice = ev;
       }
 
-      // 喇叭按钮动画
-      const btn = document.getElementById('btn-speak');
-      if (btn) btn.classList.add('playing');
-      utterance.onend = () => {
-        if (btn) btn.classList.remove('playing');
-      };
+      utterance.onend = done;
       utterance.onerror = () => {
-        if (btn) btn.classList.remove('playing');
-        // 手机上首次播放可能会失败，重试一次
-        setTimeout(() => {
-          try { speechSynthesis.speak(utterance); } catch(e) {}
-        }, 500);
+        // Web Speech API 失败 → 降级到在线 TTS
+        this.useFallbackAudio = true;
+        this.speakFallback(word.word, done);
       };
 
       speechSynthesis.speak(utterance);
     } catch(e) {
-      console.log('speak error:', e.message);
+      this.useFallbackAudio = true;
+      this.speakFallback(word.word, done);
     }
+  },
+
+  /**
+   * 备用发音：使用 Google TTS 在线合成
+   * 对不支持 Web Speech API 的浏览器（部分国产 Android 浏览器）
+   */
+  speakFallback(text, done) {
+    // 移除已有的 audio 元素
+    const old = document.getElementById('tts-audio');
+    if (old) old.remove();
+
+    const url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q='
+               + encodeURIComponent(text);
+    const audio = document.createElement('audio');
+    audio.id = 'tts-audio';
+    audio.style.display = 'none';
+    audio.onended = done;
+    audio.onerror = done;
+    audio.src = url;
+    document.body.appendChild(audio);
+    audio.play().catch(done);
   },
 
   /**
