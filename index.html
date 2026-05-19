@@ -4,11 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#534AB7">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<title>词记 - 免费背单词</title>
+<title>词记 - 考研背单词</title>
 <style>
 /* ===== Reset & Base ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -503,6 +500,50 @@ body {
   opacity: 0.8;
 }
 
+/* ===== Wrong Words ===== */
+#wrong-words-list {
+  margin-bottom: 12px;
+}
+
+/* ===== Exam Meanings ===== */
+#card-exam-meaning {
+  margin-top: 10px;
+  width: 88%;
+  text-align: left;
+  animation: fadeUp 0.3s ease;
+}
+.exam-meaning-label {
+  font-size: 11px;
+  color: var(--danger);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.exam-meaning-content {
+  font-size: 12px;
+  line-height: 1.6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.exam-common {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+.exam-arrow {
+  color: var(--danger);
+  font-size: 14px;
+}
+.exam-exam {
+  color: var(--danger);
+  font-weight: 500;
+}
+.exam-source {
+  font-size: 10px;
+  color: var(--text-hint);
+  margin-top: 2px;
+}
+
 /* ===== Vocab Selection ===== */
 .vocab-list { margin-top: 8px; }
 .vocab-option {
@@ -632,58 +673,21 @@ body {
 </nav>
 
 <div id="page-learn" class="page active">
-  <div class="progress-card">
-    <div class="progress-header">
-      <span>今日进度</span>
-      <span id="progress-text" class="progress-value">0/0</span>
-    </div>
-    <div class="progress-bar">
-      <div id="progress-fill" class="progress-fill"></div>
-    </div>
-    <div class="progress-detail">
-      <span>新词 <strong id="new-count">0</strong></span>
-      <span>复习 <strong id="review-count">0</strong></span>
-    </div>
-  </div>
-
+  <div class="progress-card"><div class="progress-header"><span>今日进度</span><span id="progress-text" class="progress-value">0/0</span></div><div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div><div class="progress-detail"><span>新词 <strong id="new-count">0</strong></span><span>复习 <strong id="review-count">0</strong></span></div></div>
   <div id="word-card" class="word-card">
-    <div class="card-tag-row">
-      <div class="card-tag" id="card-tag">n.</div>
-      <div class="card-freq" id="card-freq">高频</div>
-    </div>
-    <div class="card-word-wrap">
-      <div class="card-word" id="card-word">word</div>
-      <button class="card-speaker" id="btn-speak" onclick="App.speak()" title="发音">&#128266;</button>
-    </div>
-    <div class="card-phonetic" id="card-phonetic">/w&#592;rd/</div>
+    <div class="card-tag-row"><div class="card-tag" id="card-tag">n.</div><div class="card-freq" id="card-freq">高频</div></div>
+    <div class="card-word-wrap"><div class="card-word" id="card-word">word</div><button class="card-speaker" id="btn-speak" onclick="App.speak()" title="发音">&#128266;</button></div>
+    <div class="card-phonetic" id="card-phonetic">/w&#601;rd/</div>
     <button class="card-def-toggle" id="def-toggle" onclick="App.toggleDefinition()">点击查看释义</button>
-    <div class="card-definition" id="card-definition" style="display:none">
-      <div id="def-meaning"></div>
-    </div>
-    <div class="card-example" id="card-example" style="display:none">
-      <div class="example-en" id="example-en"></div>
-      <div class="example-cn" id="example-cn"></div>
-    </div>
-    <div class="card-synonyms" id="card-synonyms" style="display:none">
-      <div class="synonyms-label">同义替换</div>
-      <div class="synonyms-list" id="synonyms-list"></div>
-    </div>
+    <div class="card-definition" id="card-definition" style="display:none"><div id="def-meaning"></div></div>
+    <div class="card-example" id="card-example" style="display:none"><div class="example-en" id="example-en"></div><div class="example-cn" id="example-cn"></div></div>
+    <div class="card-synonyms" id="card-synonyms" style="display:none"><div class="synonyms-label">同义替换</div><div class="synonyms-list" id="synonyms-list"></div></div>
+    <div id="card-exam-meaning" style="display:none"></div>
     <div class="card-next-info" id="card-next-info"></div>
   </div>
-
-  <div class="action-buttons">
-    <button class="btn btn-forget" onclick="App.rateWord(0)">不认识</button>
-    <button class="btn btn-hesitate" onclick="App.rateWord(3)">模糊</button>
-    <button class="btn btn-know" onclick="App.rateWord(5)">认识</button>
-  </div>
+  <div class="action-buttons"><button class="btn btn-forget" onclick="App.rateWord(0)">不认识</button><button class="btn btn-hesitate" onclick="App.rateWord(3)">模糊</button><button class="btn btn-know" onclick="App.rateWord(5)">认识</button></div>
   <div class="shortcut-hint">键盘: &#8592; 不认识 &#8593; 模糊 &#8594; 认识</div>
-
-  <div id="complete-banner" class="complete-banner" style="display:none">
-    <div class="complete-icon">&#127881;</div>
-    <div class="complete-title">今日学习完成！</div>
-    <div id="complete-stats" class="complete-stats"></div>
-    <button class="btn btn-know" style="margin-top:12px" onclick="App.startLearning()">再学一些</button>
-  </div>
+  <div id="complete-banner" class="complete-banner" style="display:none"><div class="complete-icon">&#127881;</div><div class="complete-title">今日学习完成！</div><div id="complete-stats" class="complete-stats"></div><button class="btn btn-know" style="margin-top:12px" onclick="App.startLearning()">再学一些</button></div>
 </div>
 
 <div id="page-stats" class="page">
@@ -694,24 +698,10 @@ body {
     <div class="stat-item"><div class="stat-value" id="stat-streak">0</div><div class="stat-label">连续天数</div></div>
     <div class="stat-item"><div class="stat-value" id="stat-accuracy">0%</div><div class="stat-label">认识率</div></div>
   </div>
-  <h2 class="section-title" style="margin-top:24px">本周学习</h2>
-  <div id="week-chart" class="week-chart"></div>
-  <h2 class="section-title" style="margin-top:24px">复习预告</h2>
-  <div id="review-forecast" class="forecast-grid"></div>
-  <h2 class="section-title" style="margin-top:24px">测试记录</h2>
-  <div id="quiz-history" style="text-align:center;padding:12px;color:var(--text-hint);font-size:13px;">暂无记录</div>
-  <button class="btn btn-back" onclick="App.showPage('learn')">返回学习</button>
-</div>
-
-<div id="page-vocab" class="page">
-  <h2 class="section-title">选择词库</h2>
-  <div class="vocab-list">
-    <label class="vocab-option">
-      <input type="radio" name="vocab" value="all" checked onchange="App.changeVocab('all')">
-      <div class="vocab-info"><div class="vocab-name">考研核心词汇</div><div class="vocab-desc">考研大纲 9602词</div></div>
-      <div class="vocab-count" id="vocab-count-all">0词</div>
-    </label>
-  </div>
+  <h2 class="section-title" style="margin-top:24px">本周学习</h2><div id="week-chart" class="week-chart"></div>
+  <h2 class="section-title" style="margin-top:24px">复习预告</h2><div id="review-forecast" class="forecast-grid"></div>
+  <h2 class="section-title" style="margin-top:24px">测试记录</h2><div id="quiz-history" style="text-align:center;padding:12px;color:var(--text-hint);font-size:13px;">暂无记录</div>
+  <h2 class="section-title" style="margin-top:24px">错题本</h2><div id="wrong-words-list"></div>
   <button class="btn btn-back" onclick="App.showPage('learn')">返回学习</button>
 </div>
 
@@ -719,17 +709,14 @@ body {
   <h2 class="section-title">每日测试</h2>
   <div id="quiz-intro" style="text-align:center;padding:40px 20px;">
     <div style="font-size:40px;margin-bottom:16px;">&#9997;</div>
-    <p style="color:var(--text-secondary);margin-bottom:10px;">从已学词汇中随机出题</p>
-    <p style="color:var(--text-hint);font-size:13px;margin-bottom:20px;">每题4个选项，选对得分</p>
+    <p style="color:var(--text-secondary);margin-bottom:20px;">从已学词汇中随机出题</p>
     <button class="btn btn-know" style="max-width:200px;margin:0 auto" onclick="Quiz.start()">开始测试</button>
   </div>
   <div id="quiz-content" style="display:none">
-    <div id="quiz-progress" style="text-align:center;font-size:13px;color:var(--text-secondary);margin-bottom:12px">
-      第 <span id="quiz-current">1</span> / <span id="quiz-total">10</span> 题
-    </div>
+    <div id="quiz-progress" style="text-align:center;font-size:13px;color:var(--text-secondary);margin-bottom:12px">第 <span id="quiz-current">1</span> / <span id="quiz-total">10</span> 题</div>
     <div class="quiz-card" id="quiz-card">
       <div id="quiz-question" style="font-size:14px;color:var(--text-secondary);margin-bottom:8px">请选择正确的中文释义</div>
-      <div id="quiz-word" class="quiz-word">abandon</div>
+      <div id="quiz-word" class="quiz-word">word</div>
       <div id="quiz-phonetic" style="font-size:13px;color:var(--danger);margin-bottom:20px"></div>
       <div id="quiz-options" class="quiz-options"></div>
       <button id="quiz-next-btn" class="btn btn-know" style="display:none;max-width:200px;margin:16px auto 0" onclick="Quiz.next()">下一题</button>
@@ -745,13 +732,22 @@ body {
   </div>
 </div>
 
+<div id="page-vocab" class="page">
+  <h2 class="section-title">选择词库</h2>
+  <div class="vocab-list">
+    <label class="vocab-option">
+      <input type="radio" name="vocab" value="all" checked onchange="App.changeVocab('all')">
+      <div class="vocab-info"><div class="vocab-name">考研核心词汇</div><div class="vocab-desc">考研大纲 9602词</div></div>
+      <div class="vocab-count" id="vocab-count-all">0词</div>
+    </label>
+  </div>
+  <button class="btn btn-back" onclick="App.showPage('learn')">返回学习</button>
+</div>
+
 <div id="page-settings" class="page">
   <h2 class="section-title">设置</h2>
   <div class="setting-group">
-    <label class="setting-row">
-      <span>每日新词数量</span>
-      <input type="number" id="setting-daily-new" min="1" max="9999" value="20" onchange="App.saveSettings()" style="width:80px;padding:6px 10px;border:0.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text-primary);text-align:center">
-    </label>
+    <label class="setting-row"><span>每日新词数量</span><input type="number" id="setting-daily-new" min="1" max="9999" value="20" onchange="App.saveSettings()" style="width:80px;padding:6px 10px;border:0.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text-primary);text-align:center"></label>
     <div style="padding:0 18px 12px;font-size:11px;color:var(--text-hint)">输入 999 即为无限制</div>
     <label class="setting-row"><span>自动播放发音</span><input type="checkbox" id="setting-auto-play" onchange="App.saveSettings()" checked></label>
     <label class="setting-row"><span>显示例句</span><input type="checkbox" id="setting-show-example" onchange="App.saveSettings()" checked></label>
@@ -761,11 +757,7 @@ body {
     <button class="btn btn-danger btn-small" onclick="App.exportData()">导出数据</button>
     <button class="btn btn-danger btn-small" style="margin-left:8px" onclick="App.clearAllData()">重置全部</button>
   </div>
-  <div class="app-info">
-    <p>词记 WordNote v1.0</p>
-    <p>完全免费 &#183; 无广告 &#183; 无限制</p>
-    <p style="color:#aaa;font-size:11px;margin-top:8px">SM-2间隔重复 &#183; 考频标记 &#183; 同义替换</p>
-  </div>
+  <div class="app-info"><p>词记 v1.0</p><p>免费 &#183; 考研专用</p></div>
   <button class="btn btn-back" onclick="App.showPage('learn')">返回学习</button>
 </div>
 
@@ -778,8 +770,7 @@ body {
 </div>
 </div>
 
-<script>
-const VOCABULARY = [
+<script>const VOCABULARY = [
 
   { "word": "act", "pos": "v/n", "definition": "表演；举动；起作用；行为，法令；一幕", "example": "act as", "translation": "担当", "freq": "高频", "tag": "cetkaoyan" },
   { "word": "action", "pos": "n", "definition": "行动，动作；作用；运转；行为；战斗", "example": "take action", "translation": "采取行动；提出诉讼", "freq": "高频", "tag": "cetkaoyan" },
@@ -10384,10 +10375,8 @@ const VOCABULARY = [
   { "word": "category", "pos": "n", "definition": "种类", "example": "product category", "translation": "产品类别；产品目录；积范畴", "freq": "中频", "tag": "cetkaoyan" },
   { "word": "rival", "pos": "adj/n/vt", "definition": "竞争的， 对手的；竞争者， 对手；竞争， 对抗", "example": "rival firms", "translation": "竞争公司；竞争商行", "freq": "低频", "tag": "cetkaoyan" }
 ];
-
 </script>
-<script>
-/**
+<script>/**
  * 考研英语高频同义替换词库
  * 每个条目：{ word: "原词", synonyms: ["替换词1", "替换词2", ...] }
  */
@@ -10461,10 +10450,154 @@ const SYNONYMS = {
   "also": ["likewise", "similarly", "furthermore", "moreover"],
   "always": ["constantly", "consistently", "invariably", "perpetually"],
 };
-
 </script>
-<script>
-/**
+<script>/**
+ * 考研英语熟词僻义（真题考义）
+ * 记录词汇在考研真题中常考的特殊含义
+ * 字段：word, common(常见意思), exam(真题考义), year(真题年份), source(来源)
+ */
+const EXAM_MEANINGS = {
+  // ===== A =====
+  "address": { common: "地址", exam: "处理；演讲", year: "2010", source: "阅读Text2" },
+  "appreciate": { common: "欣赏；感激", exam: "意识到；理解", year: "", source: "" },
+  "approach": { common: "接近", exam: "方法；处理", year: "2011", source: "阅读Text1" },
+  "arm": { common: "手臂", exam: "配备(设备)；武装", year: "2004", source: "阅读Text4" },
+  "acute": { common: "尖锐的", exam: "严重的；敏锐的", year: "2019", source: "完形填空" },
+  "agent": { common: "代理人", exam: "原动力；因素", year: "2002", source: "翻译" },
+  "afford": { common: "买得起", exam: "提供；给予", year: "", source: "" },
+  "academic": { common: "学术的", exam: "学究式的；空谈的", year: "2012", source: "阅读Text3" },
+  
+  // ===== B =====
+  "betray": { common: "背叛", exam: "暴露；显示", year: "", source: "" },
+  "bill": { common: "账单", exam: "法案；议案", year: "2000", source: "阅读Text1" },
+  
+  // ===== C =====
+  "chair": { common: "椅子", exam: "主持(会议)", year: "2003", source: "阅读Text4" },
+  "cripple": { common: "使跛", exam: "严重削弱", year: "", source: "" },
+  "climate": { common: "气候", exam: "氛围；风气", year: "2013", source: "阅读Text2" },
+  "code": { common: "代码；密码", exam: "准则；规范", year: "2014", source: "阅读Text1" },
+  "contribute": { common: "贡献", exam: "导致(contribute to)", year: "2017", source: "阅读Text3" },
+  "consequence": { common: "结果", exam: "重要性(of consequence)", year: "", source: "" },
+  "critical": { common: "批评的", exam: "至关重要的；危急的", year: "2015", source: "阅读Text2" },
+  "curious": { common: "好奇的", exam: "稀奇古怪的", year: "", source: "" },
+  
+  // ===== D =====
+  "desert": { common: "沙漠", exam: "抛弃；遗弃", year: "2000", source: "阅读Text2" },
+  "discipline": { common: "纪律", exam: "学科；训练", year: "2008", source: "阅读Text4" },
+  "domestic": { common: "国内的", exam: "家庭的；驯养的", year: "", source: "" },
+  "dramatic": { common: "戏剧的", exam: "巨大的；显著的", year: "2016", source: "阅读Text1" },
+  
+  // ===== E =====
+  "economy": { common: "经济", exam: "节约；简练", year: "", source: "" },
+  "engage": { common: "雇佣", exam: "吸引；使参与", year: "2010", source: "阅读Text3" },
+  "enterprise": { common: "企业", exam: "事业心；进取心", year: "2011", source: "阅读Text3" },
+  "entertain": { common: "娱乐", exam: "怀有；考虑", year: "", source: "" },
+  "even": { common: "甚至", exam: "平和的；相等的", year: "2002", source: "阅读Text3" },
+  "exercise": { common: "锻炼", exam: "行使(权利)；运用", year: "2005", source: "阅读Text1" },
+  "exploit": { common: "剥削", exam: "开发；利用", year: "", source: "" },
+  "exhaust": { common: "耗尽", exam: "详尽讨论", year: "", source: "" },
+  
+  // ===== F =====
+  "fair": { common: "公平的", exam: "集市；展览会", year: "2003", source: "阅读Text1" },
+  "fashion": { common: "时尚", exam: "方式；样子", year: "", source: "" },
+  "file": { common: "文件", exam: "提起(诉讼)；提出(申请)", year: "", source: "" },
+  "fail": { common: "失败", exam: "使失望；未能做", year: "", source: "" },
+  "fetch": { common: "取来", exam: "卖得(某价)", year: "", source: "" },
+  "fat": { common: "肥胖的", exam: "丰厚的(利润)", year: "", source: "" },
+  "finished": { common: "完成了的", exam: "精湛的；完美的", year: "", source: "" },
+  "fuel": { common: "燃料", exam: "刺激；加剧", year: "2018", source: "阅读Text3" },
+  "figure": { common: "数字；人物", exam: "认为；计算(figure out)", year: "2009", source: "阅读Text2" },
+  
+  // ===== G =====
+  "ground": { common: "地面", exam: "根据；理由", year: "2010", source: "翻译" },
+  "grant": { common: "授予", exam: "承认(take for granted)", year: "", source: "" },
+  
+  // ===== H =====
+  "handsome": { common: "英俊的", exam: "可观的(数量)", year: "", source: "" },
+  "heavy": { common: "重的", exam: "大量的；剧烈的", year: "2013", source: "阅读Text4" },
+  "hold": { common: "持有", exam: "认为；举行", year: "2012", source: "阅读Text1" },
+  
+  // ===== I =====
+  "interest": { common: "兴趣", exam: "利益；利息", year: "", source: "" },
+  "instrument": { common: "乐器", exam: "工具；手段", year: "", source: "" },
+  "issue": { common: "问题", exam: "发行；发布", year: "2015", source: "阅读Text4" },
+  "inspire": { common: "鼓舞", exam: "启发；引起", year: "2011", source: "阅读Text2" },
+  "intelligence": { common: "智力", exam: "情报；信息", year: "2009", source: "阅读Text2" },
+  "institution": { common: "机构", exam: "制度；习俗", year: "2006", source: "阅读Text4" },
+  
+  // ===== J-L =====
+  "just": { common: "公正的", exam: "仅仅；刚刚", year: "", source: "" },
+  "labor": { common: "劳动", exam: "分娩；努力", year: "", source: "" },
+  "lame": { common: "瘸的", exam: "站不住脚的(借口)", year: "", source: "" },
+  "lend": { common: "借出", exam: "提供；赋予(lend itself to)", year: "", source: "" },
+  "late": { common: "迟的", exam: "已故的；最近的", year: "", source: "" },
+  
+  // ===== M =====
+  "might": { common: "可能", exam: "力量；威力", year: "2001", source: "阅读Text2" },
+  "minute": { common: "分钟", exam: "微小的；细微的", year: "", source: "" },
+  "major": { common: "主要的", exam: "主修；专业", year: "", source: "" },
+  "mean": { common: "意思是", exam: "意味着；打算", year: "2016", source: "阅读Text3" },
+  "mature": { common: "成熟的", exam: "到期的", year: "", source: "" },
+  "matter": { common: "事情", exam: "要紧(as a matter of)", year: "2017", source: "阅读Text1" },
+  "medium": { common: "媒介", exam: "中等的；适中的", year: "", source: "" },
+  
+  // ===== N-O =====
+  "net": { common: "网", exam: "净得的；最终的", year: "", source: "" },
+  "novel": { common: "小说", exam: "新颖的", year: "2008", source: "阅读Text3" },
+  "observe": { common: "观察", exam: "遵守；评论", year: "", source: "" },
+  "obscure": { common: "模糊的", exam: "使难理解；掩盖", year: "2014", source: "阅读Text2" },
+  "organ": { common: "器官", exam: "机关；机构", year: "", source: "" },
+  
+  // ===== P =====
+  "plain": { common: "朴素的", exam: "显然的；绝对的(adv.)", year: "2002", source: "阅读Text4" },
+  "pose": { common: "摆姿势", exam: "造成(威胁/问题)", year: "2002", source: "翻译" },
+  "preserve": { common: "保存", exam: "独占的领域", year: "", source: "" },
+  "plant": { common: "植物", exam: "工厂；设备", year: "2010", source: "阅读Text4" },
+  "promise": { common: "承诺", exam: "有希望；前景", year: "2013", source: "阅读Text2" },
+  "province": { common: "省份", exam: "领域；范围", year: "", source: "" },
+  "pool": { common: "水池", exam: "集中资源", year: "", source: "" },
+  
+  // ===== Q-R =====
+  "quality": { common: "质量", exam: "特质；品质", year: "2015", source: "阅读Text1" },
+  "raw": { common: "生的", exam: "未经训练的；原始的", year: "", source: "" },
+  "register": { common: "登记", exam: "显示；表达", year: "", source: "" },
+  "reach": { common: "到达", exam: "影响范围；联系", year: "2011", source: "阅读Text4" },
+  "reason": { common: "原因", exam: "推理；论证", year: "2007", source: "阅读Text3" },
+  "relate": { common: "与…有关", exam: "讲述；叙述", year: "", source: "" },
+  "rest": { common: "休息", exam: "取决于(rest on)", year: "", source: "" },
+  "revolution": { common: "革命", exam: "旋转；周期", year: "", source: "" },
+  
+  // ===== S =====
+  "school": { common: "学校", exam: "学派；鱼群", year: "", source: "" },
+  "season": { common: "季节", exam: "调味；使适应", year: "", source: "" },
+  "secure": { common: "安全的", exam: "获得；争取", year: "2004", source: "阅读Text3" },
+  "shoulder": { common: "肩膀", exam: "承担(责任)", year: "2003", source: "阅读Text4" },
+  "sour": { common: "酸的", exam: "令人不愉快的", year: "", source: "" },
+  "spell": { common: "拼写", exam: "一段时间；招致", year: "2002", source: "阅读Text1" },
+  "sweep": { common: "打扫", exam: "席卷；扫过", year: "2001", source: "阅读Text3" },
+  "subject": { common: "科目", exam: "使服从；受…支配", year: "2006", source: "翻译" },
+  "stem": { common: "茎", exam: "起源于(stem from)", year: "2009", source: "阅读Text4" },
+  "stage": { common: "舞台", exam: "阶段；举办", year: "2012", source: "阅读Text3" },
+  "staple": { common: "订书钉", exam: "主食；主要的", year: "", source: "" },
+  "scale": { common: "规模", exam: "攀登；衡量", year: "2014", source: "阅读Text3" },
+  "soil": { common: "土壤", exam: "弄脏；损害", year: "", source: "" },
+  
+  // ===== T =====
+  "term": { common: "学期；术语", exam: "把…称为", year: "2001", source: "阅读Text2" },
+  "tired": { common: "疲倦的", exam: "陈腐的；厌倦的", year: "2001", source: "阅读Text4" },
+  "trip": { common: "旅行", exam: "绊倒；使犯错误", year: "", source: "" },
+  "train": { common: "火车", exam: "培养；训练", year: "2007", source: "阅读Text4" },
+  "thorough": { common: "彻底的", exam: "十足的；完全的", year: "", source: "" },
+  
+  // ===== U-Z =====
+  "utter": { common: "说出", exam: "完全的；十足的(adj.)", year: "", source: "" },
+  "volume": { common: "体积；音量", exam: "卷；大量", year: "", source: "" },
+  "want": { common: "想要", exam: "缺乏；需要", year: "", source: "" },
+  "weather": { common: "天气", exam: "经受住(风雨)", year: "2016", source: "阅读Text4" },
+  "yield": { common: "生产", exam: "屈服；产量", year: "2000", source: "阅读Text1" }
+};
+</script>
+<script>/**
  * SM-2 间隔重复算法
  * 基于Piotr Wozniak的SuperMemo SM-2算法
  * 参考：https://www.supermemo.com/en/algorithms/sm-2
@@ -10579,10 +10712,8 @@ const SM2 = {
     know: 5
   }
 };
-
 </script>
-<script>
-/**
+<script>/**
  * 数据持久化层 - localStorage 封装
  * 管理所有学习数据的读写
  */
@@ -10816,6 +10947,37 @@ const Store = {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   },
 
+  /**
+   * 获取错题列表（按错误次数排序）
+   */
+  getWrongWords(limit = 50) {
+    const cards = this.getAllCards();
+    const wrongList = [];
+
+    for (const [wordId, card] of Object.entries(cards)) {
+      // 有过"不认识"记录 或 正确率低于50% 的算错题
+      const total = card.totalReviews || 0;
+      const correct = card.correctCount || 0;
+      const wrongCount = total - correct;
+
+      if (wrongCount > 0) {
+        const vocab = VOCABULARY.find(v => v.word.toLowerCase() === wordId.toLowerCase());
+        if (vocab) {
+          wrongList.push({
+            ...vocab,
+            card,
+            wrongCount,
+            accuracy: total > 0 ? Math.round((correct / total) * 100) : 0
+          });
+        }
+      }
+    }
+
+    // 按错误次数降序排列
+    wrongList.sort((a, b) => b.wrongCount - a.wrongCount);
+    return wrongList.slice(0, limit);
+  },
+
   // ===== 数据导出 =====
   exportData() {
     return {
@@ -10859,10 +11021,8 @@ const Store = {
     return { totalQuizzes: history.length, totalQuestions: total, correct, avg };
   }
 };
-
 </script>
-<script>
-/**
+<script>/**
  * 每日测试模块
  * 从已学词汇中随机出题，自动判分
  */
@@ -11060,10 +11220,8 @@ const Quiz = {
     return a;
   }
 };
-
 </script>
-<script>
-/**
+<script>/**
  * 词记 (WordNote) - 主应用逻辑
  * 控制页面切换、单词展示、用户交互
  */
@@ -11105,6 +11263,24 @@ const App = {
     document.getElementById('word-card').style.display = 'flex';
     document.querySelector('.action-buttons').style.display = 'flex';
     document.querySelector('.shortcut-hint').style.display = 'block';
+
+    // 恢复进度卡片（可能被错题复习模式覆盖）
+    const pc = document.querySelector('.progress-card');
+    if (!pc.querySelector('.progress-bar')) {
+      pc.innerHTML = `
+        <div class="progress-header">
+          <span>今日进度</span>
+          <span id="progress-text" class="progress-value">0/0</span>
+        </div>
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div class="progress-detail">
+          <span>新词 <strong id="new-count">0</strong></span>
+          <span>复习 <strong id="review-count">0</strong></span>
+        </div>
+      `;
+    }
 
     if (this.currentQueue.length === 0) {
       this.showComplete();
@@ -11166,6 +11342,8 @@ const App = {
 
     // 显示同义替换
     this.showSynonyms(item.word);
+    // 显示真题考义
+    this.showExamMeaning(item.word);
   },
 
   /**
@@ -11200,6 +11378,37 @@ const App = {
       synContainer.style.display = 'block';
     } else {
       synContainer.style.display = 'none';
+    }
+  },
+
+  /**
+   * 显示真题考义
+   */
+  showExamMeaning(word) {
+    const el = document.getElementById('card-exam-meaning');
+    const lower = word.toLowerCase();
+
+    if (EXAM_MEANINGS && EXAM_MEANINGS[lower]) {
+      const info = EXAM_MEANINGS[lower];
+      let yearText = '';
+      if (info.year && info.source) {
+        yearText = `${info.year}年真题 ${info.source}`;
+      } else if (info.year) {
+        yearText = `${info.year}年真题`;
+      }
+
+      el.innerHTML = `
+        <div class="exam-meaning-label">&#128220; 真题考义</div>
+        <div class="exam-meaning-content">
+          <span class="exam-common">常见义：${info.common}</span>
+          <span class="exam-arrow">&#8594;</span>
+          <span class="exam-exam">考义：${info.exam}</span>
+        </div>
+        ${yearText ? `<div class="exam-source">${yearText}</div>` : ''}
+      `;
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
     }
   },
 
@@ -11428,6 +11637,91 @@ const App = {
     this.renderForecast();
     // 测试记录
     this.renderQuizStats();
+    // 错题本
+    this.renderWrongWords();
+  },
+
+  /**
+   * 渲染错题本
+   */
+  renderWrongWords() {
+    const el = document.getElementById('wrong-words-list');
+    const wrongWords = Store.getWrongWords();
+
+    if (wrongWords.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-hint);font-size:13px;">还没有错题，继续保持！</div>';
+      return;
+    }
+
+    let html = '';
+    wrongWords.slice(0, 10).forEach(item => {
+      html += `
+        <div style="display:flex;align-items:center;background:var(--card-bg);border-radius:8px;padding:10px 14px;margin-bottom:6px;">
+          <div style="flex:1;">
+            <div style="font-weight:500;font-size:14px;">${item.word}</div>
+            <div style="font-size:11px;color:var(--text-hint);">${item.definition.split('；')[0]}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px;font-weight:600;color:var(--danger);">${item.wrongCount}次</div>
+            <div style="font-size:10px;color:var(--text-hint);">错误</div>
+          </div>
+        </div>
+      `;
+    });
+
+    if (wrongWords.length > 10) {
+      html += `<div style="text-align:center;font-size:12px;color:var(--text-hint);padding:4px;">还有 ${wrongWords.length - 10} 个错题...</div>`;
+    }
+
+    // Add review button
+    html += `<button class="btn btn-know btn-small" style="margin-top:10px;width:100%;" onclick="App.reviewWrongWords()">复习错题 (${wrongWords.length}个)</button>`;
+
+    el.innerHTML = html;
+  },
+
+  /**
+   * 复习错题模式
+   */
+  reviewWrongWords() {
+    const wrongWords = Store.getWrongWords();
+    if (wrongWords.length === 0) {
+      alert('没有错题！');
+      return;
+    }
+
+    // 用错题生成学习队列
+    this.currentQueue = wrongWords.map(w => ({
+      ...w,
+      isReview: true,
+      fromWrongBook: true
+    }));
+    this.currentIndex = 0;
+    this.todayNewCount = 0;
+    this.todayReviewCount = 0;
+
+    document.getElementById('complete-banner').style.display = 'none';
+    document.getElementById('word-card').style.display = 'flex';
+    document.querySelector('.action-buttons').style.display = 'flex';
+    document.querySelector('.shortcut-hint').style.display = 'block';
+
+    // 显示错题复习提示
+    document.querySelector('.progress-card').innerHTML = `
+      <div style="text-align:center;padding:4px 0;">
+        <span style="font-size:13px;color:var(--danger);font-weight:500;">&#9888; 错题复习模式</span>
+        <span style="font-size:12px;color:var(--text-secondary);margin-left:8px;">共 ${this.currentQueue.length} 个</span>
+        <button class="btn btn-danger btn-small" style="margin-left:12px;padding:4px 12px;font-size:12px;" onclick="App.exitWrongReview()">退出</button>
+      </div>
+    `;
+
+    this.showPage('learn');
+    this.showCurrentWord();
+  },
+
+  /**
+   * 退出错题复习
+   */
+  exitWrongReview() {
+    this.startLearning();
   },
 
   /**
@@ -11643,7 +11937,6 @@ const App = {
 
 // 页面加载完成后启动
 document.addEventListener('DOMContentLoaded', () => App.init());
-
 </script>
 <script>
 if ('serviceWorker' in navigator) {
