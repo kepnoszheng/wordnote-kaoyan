@@ -665,6 +665,7 @@ body {
 <body>
 <div id="app">
 <div id="app">
+<div id="app">
 
 <nav class="navbar">
   <div class="nav-brand">词记</div>
@@ -769,6 +770,7 @@ body {
   <div class="tab-item" onclick="App.showPage('quiz')" data-page="quiz"><div class="tab-icon">&#9997;</div><div class="tab-label">测试</div></div>
   <div class="tab-item" onclick="App.showPage('stats')" data-page="stats"><div class="tab-icon">&#128202;</div><div class="tab-label">统计</div></div>
   <div class="tab-item" onclick="App.showPage('settings')" data-page="settings"><div class="tab-icon">&#9881;</div><div class="tab-label">设置</div></div>
+</div>
 </div>
 </div>
 </div>
@@ -11248,8 +11250,57 @@ const App = {
     this.bindKeyboard();
     this.checkAndRecordStreak();
 
+    // 手机端：预加载语音包，首次触摸时解锁音频
+    this.audioUnlocked = false;
+    this.pendingSpeak = null;
+    this.preloadVoices();
+    this.unlockAudioOnTouch();
+
     console.log('📖 词记 WordNote v0.1 - 免费无限制背单词');
     console.log(`📚 词库: ${VOCABULARY.length} 个词汇`);
+  },
+
+  /**
+   * 预加载语音包（手机浏览器需要提前加载）
+   */
+  preloadVoices() {
+    if (!window.speechSynthesis) return;
+    // Chrome/Edge 需要 voiceschanged 事件触发后才能获取语音列表
+    window.speechSynthesis.getVoices(); // 触发加载
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  },
+
+  /**
+   * 手机端：通过首次触摸解锁音频
+   * 手机浏览器要求语音播放必须在用户交互中触发
+   */
+  unlockAudioOnTouch() {
+    const handler = () => {
+      if (this.audioUnlocked) return;
+      this.audioUnlocked = true;
+      // 预创建一次空的 SpeechSynthesisUtterance 来解锁音频
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const dummy = new SpeechSynthesisUtterance('');
+        dummy.volume = 0;
+        window.speechSynthesis.speak(dummy);
+        window.speechSynthesis.cancel();
+      }
+      // 如果有等待播放的语音，立即播放
+      if (this.pendingSpeak) {
+        this.speak();
+        this.pendingSpeak = null;
+      }
+      // 移除监听器，只需解锁一次
+      document.removeEventListener('touchstart', handler);
+      document.removeEventListener('click', handler);
+    };
+    document.addEventListener('touchstart', handler, { once: true });
+    document.addEventListener('click', handler, { once: true });
   },
 
   /**
@@ -11438,16 +11489,28 @@ const App = {
     // 自动发音
     const settings = Store.getSettings();
     if (settings.autoPlay !== false) {
-      setTimeout(() => this.speak(), 200);
+      if (this.audioUnlocked) {
+        setTimeout(() => this.speak(), 200);
+      } else {
+        // 手机端：等用户首次触摸后再播
+        this.pendingSpeak = true;
+      }
     }
   },
 
   /**
    * 朗读当前单词（Web Speech API，浏览器内置）
+   * 手机端：需先触摸页面解锁音频（见 unlockAudioOnTouch）
    */
   speak() {
     const word = this.currentWord;
     if (!word || !window.speechSynthesis) return;
+
+    // 如果音频尚未解锁（手机端），排队等触摸后播
+    if (!this.audioUnlocked) {
+      this.pendingSpeak = true;
+      return;
+    }
 
     // 取消正在播放的语音
     window.speechSynthesis.cancel();
@@ -11458,7 +11521,7 @@ const App = {
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    // 优先选择英语语音
+    // 获取语音包（手机上可能需要重试）
     const voices = window.speechSynthesis.getVoices();
     const enVoice = voices.find(v => v.lang.startsWith('en'));
     if (enVoice) utterance.voice = enVoice;
