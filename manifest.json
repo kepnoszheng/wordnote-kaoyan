@@ -1,0 +1,22 @@
+{
+  "name": "词记 WordNote",
+  "short_name": "词记",
+  "description": "免费无限制考研背单词，SM-2间隔重复算法",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#F5F5F0",
+  "theme_color": "#534AB7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
