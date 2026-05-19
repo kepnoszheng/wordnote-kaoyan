@@ -668,6 +668,7 @@ body {
 <div id="app">
 <div id="app">
 <div id="app">
+<div id="app">
 
 <nav class="navbar">
   <div class="nav-brand">词记</div>
@@ -772,6 +773,7 @@ body {
   <div class="tab-item" onclick="App.showPage('quiz')" data-page="quiz"><div class="tab-icon">&#9997;</div><div class="tab-label">测试</div></div>
   <div class="tab-item" onclick="App.showPage('stats')" data-page="stats"><div class="tab-icon">&#128202;</div><div class="tab-label">统计</div></div>
   <div class="tab-item" onclick="App.showPage('settings')" data-page="settings"><div class="tab-icon">&#9881;</div><div class="tab-label">设置</div></div>
+</div>
 </div>
 </div>
 </div>
@@ -11265,37 +11267,35 @@ const App = {
 
   /**
    * 检测语音合成支持情况
-   * 部分 Android 浏览器（如华为自带浏览器）不支持 Web Speech API，
-   * 需要改用在线 TTS 发音
+   * 部分 Android 浏览器（如华为自带浏览器）虽然支持但调用会失败，
+   * 统一先试 Web Speech API，失败后自动切到备用发音
    */
   detectSpeechSupport() {
-    // 检测 Web Speech API
-    if (window.speechSynthesis && typeof speechSynthesis.speak === 'function') {
-      // 尝试初始化：部分浏览器需要先 touch 才能用
+    this.useFallbackAudio = false;
+    this.speechRetried = {};
+
+    if (window.speechSynthesis) {
       speechSynthesis.getVoices();
       if (typeof speechSynthesis.onvoiceschanged !== 'undefined') {
         speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
       }
-      this.speechReady = true;
+    }
 
-      // 首次触摸时唤醒
-      const wake = () => {
+    // 首次触摸时唤醒（iOS 需要）
+    const wake = () => {
+      if (window.speechSynthesis) {
         try {
           speechSynthesis.cancel();
           const u = new SpeechSynthesisUtterance('a');
           u.volume = 0.01;
           speechSynthesis.speak(u);
         } catch(e) {}
-        document.removeEventListener('touchstart', wake, true);
-        document.removeEventListener('click', wake, true);
-      };
-      document.addEventListener('touchstart', wake, { once: true, capture: true });
-      document.addEventListener('click', wake, { once: true, capture: true });
-    } else {
-      // Web Speech API 不可用，使用备用在线 TTS
-      this.useFallbackAudio = true;
-      console.log('⚠️ 当前浏览器不支持内置发音，使用备用 TTS');
-    }
+      }
+      document.removeEventListener('touchstart', wake, true);
+      document.removeEventListener('click', wake, true);
+    };
+    document.addEventListener('touchstart', wake, { once: true, capture: true });
+    document.addEventListener('click', wake, { once: true, capture: true });
   },
 
   /**
@@ -11492,68 +11492,80 @@ const App = {
 
   /**
    * 朗读当前单词
-   * 优先用 Web Speech API，不支持时自动切换在线 TTS（Google TTS）
+   * 流程：试 Web Speech API → 失败？→ 用备用在线TTS（有道词典，国内可访问）
    */
   speak() {
     const word = this.currentWord;
     if (!word) return;
 
-    // 按钮动画
     const btn = document.getElementById('btn-speak');
     if (btn) btn.classList.add('playing');
     const done = () => { if (btn) btn.classList.remove('playing'); };
 
-    if (this.useFallbackAudio || !window.speechSynthesis) {
-      return this.speakFallback(word.word, done);
-    }
+    // 尝试 web speech api
+    if (window.speechSynthesis && !this.useFallbackAudio) {
+      try {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(word.word);
+        u.lang = 'en-US';
+        u.rate = 0.9;
+        u.volume = 1.0;
 
-    try {
-      speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(word.word);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.9;
-      utterance.volume = 1.0;
+        const voices = speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          const ev = voices.find(v => v.lang.startsWith('en'));
+          if (ev) u.voice = ev;
+        }
 
-      // 可选：设置英语语音
-      const voices = speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        const ev = voices.find(v => v.lang.startsWith('en'));
-        if (ev) utterance.voice = ev;
-      }
+        u.onend = done;
+        u.onerror = () => {
+          // Web Speech API 失败 → 永久切到备用发音
+          this.useFallbackAudio = true;
+          this.speakFallback(word.word, done);
+        };
 
-      utterance.onend = done;
-      utterance.onerror = () => {
-        // Web Speech API 失败 → 降级到在线 TTS
+        speechSynthesis.speak(u);
+        return;
+      } catch(e) {
         this.useFallbackAudio = true;
-        this.speakFallback(word.word, done);
-      };
-
-      speechSynthesis.speak(utterance);
-    } catch(e) {
-      this.useFallbackAudio = true;
-      this.speakFallback(word.word, done);
+      }
     }
+
+    // 备用发音（Web Speech API 不可用或已标记降级）
+    this.speakFallback(word.word, done);
   },
 
   /**
-   * 备用发音：使用 Google TTS 在线合成
-   * 对不支持 Web Speech API 的浏览器（部分国产 Android 浏览器）
+   * 备用发音：使用在线 TTS（有道词典）
+   * 国内可访问，比 Google TTS 更稳定
+   * 优先用有道英式发音，失败时试美式发音
    */
   speakFallback(text, done) {
-    // 移除已有的 audio 元素
     const old = document.getElementById('tts-audio');
     if (old) old.remove();
 
-    const url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q='
-               + encodeURIComponent(text);
+    // 有道词典发音接口（type=0 英式，type=1 美式）
     const audio = document.createElement('audio');
     audio.id = 'tts-audio';
     audio.style.display = 'none';
     audio.onended = done;
-    audio.onerror = done;
-    audio.src = url;
+    audio.onerror = () => {
+      // 有道也失败的话，试试美式发音
+      if (!audio.dataset.retried) {
+        audio.dataset.retried = '1';
+        audio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=1';
+        audio.play().catch(done);
+      } else {
+        done();
+      }
+    };
+    audio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=0';
     document.body.appendChild(audio);
-    audio.play().catch(done);
+    audio.play().catch(() => {
+      // 第一遍失败，换美式发音再试
+      audio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=1';
+      audio.play().catch(done);
+    });
   },
 
   /**
